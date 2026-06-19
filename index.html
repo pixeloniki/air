@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ÆRO – AI Flight Discovery</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --midnight: #080C1A;
+    --navy: #0D1528;
+    --deep: #111D3A;
+    --steel: #1A2C55;
+    --gold: #C8963C;
+    --gold-light: #E8B86D;
+    --gold-pale: #F5D99A;
+    --cloud: #E8EEF8;
+    --mist: #B8C8E4;
+    --text: #D4DCEC;
+    --accent: #4A8FE8;
+    --accent2: #7EC8E3;
+    --red: #E85454;
+    --green: #4AE8A8;
+    --exhaust: rgba(200,150,60,0.3);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body {
+    background: var(--midnight);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ───── STARFIELD ───── */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--d) ease-in-out infinite;
+    opacity: 0;
+  }
+  @keyframes twinkle {
+    0%,100%{opacity:0;} 50%{opacity:var(--o);}
+  }
+
+  /* ───── NAVBAR ───── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    background: linear-gradient(to bottom, rgba(8,12,26,0.95), transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(200,150,60,0.1);
+  }
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+  }
+  .nav-logo span {
+    color: var(--accent2);
+    font-style: italic;
+  }
+  .nav-links {
+    display: flex;
+    gap: 36px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--mist);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    color: var(--midnight) !important;
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-weight: 600 !important;
+  }
+
+  /* ───── HERO ───── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  /* Cloud layers */
+  .cloud-layer {
+    position: absolute;
+    width: 200%;
+    height: 100%;
+    top: 0; left: -50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .cloud-layer svg { width: 100%; height: 100%; }
+
+  /* ─── 3D AIRPLANE SCENE ─── */
+  .plane-scene {
+    position: absolute;
+    inset: 0;
+    perspective: 1200px;
+    perspective-origin: 50% 45%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Main airplane in 3D CSS */
+  .airplane-wrapper {
+    position: absolute;
+    top: 45%; left: 50%;
+    transform-style: preserve-3d;
+    animation: flyPath 18s ease-in-out infinite;
+  }
+
+  @keyframes flyPath {
+    0%   { transform: translate(-60vw, 15vh) rotateY(-15deg) rotateZ(-4deg) scale(0.6); }
+    25%  { transform: translate(-20vw, -8vh) rotateY(-5deg) rotateZ(-1deg) scale(0.85); }
+    50%  { transform: translate(0vw, -12vh) rotateY(0deg) rotateZ(0deg) scale(1); }
+    75%  { transform: translate(25vw, -5vh) rotateY(8deg) rotateZ(2deg) scale(0.9); }
+    100% { transform: translate(70vw, 20vh) rotateY(20deg) rotateZ(5deg) scale(0.65); }
+  }
+
+  .airplane {
+    transform-style: preserve-3d;
+    position: relative;
+    width: 320px;
+    height: 80px;
+  }
+
+  /* Fuselage */
+  .fuselage {
+    position: absolute;
+    width: 280px; height: 38px;
+    left: 20px; top: 21px;
+    background: linear-gradient(to bottom, #E8EEF8 0%, #B8C8E4 40%, #8AA0C4 60%, #5A7099 100%);
+    border-radius: 50% 8px 8px 50% / 50% 8px 8px 50%;
+    box-shadow:
+      inset 0 -6px 12px rgba(0,0,0,0.3),
+      inset 0 4px 8px rgba(255,255,255,0.4),
+      0 4px 20px rgba(0,0,0,0.5);
+    transform: translateZ(0px);
+  }
+  /* Nose */
+  .nose {
+    position: absolute;
+    width: 70px; height: 34px;
+    left: 16px; top: 23px;
+    background: linear-gradient(to bottom, #D0DAEC, #A0B4D0);
+    border-radius: 50% 0 0 50%;
+    transform: translateZ(1px);
+  }
+  /* Cockpit windows */
+  .cockpit {
+    position: absolute;
+    width: 28px; height: 14px;
+    left: 56px; top: 24px;
+    background: linear-gradient(135deg, #7EC8E3, #4A8FE8);
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 0 8px rgba(126,200,227,0.6);
+    transform: translateZ(2px);
+  }
+
+  /* Main wings */
+  .wing-left {
+    position: absolute;
+    width: 0; height: 0;
+    left: 105px; top: -45px;
+    border-left: 30px solid transparent;
+    border-right: 100px solid rgba(180,200,230,0.95);
+    border-bottom: 65px solid transparent;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+    transform: translateZ(-1px) rotateX(5deg);
+  }
+  .wing-right {
+    position: absolute;
+    width: 0; height: 0;
+    left: 105px; top: 58px;
+    border-left: 30px solid transparent;
+    border-right: 100px solid rgba(140,165,205,0.9);
+    border-top: 65px solid transparent;
+    filter: drop-shadow(0 -4px 12px rgba(0,0,0,0.4));
+    transform: translateZ(-1px) rotateX(-5deg);
+  }
+  /* Wing gold stripe */
+  .wing-stripe-l {
+    position: absolute;
+    width: 80px; height: 3px;
+    left: 120px; top: 10px;
+    background: linear-gradient(to right, var(--gold), transparent);
+    transform: rotate(-35deg) translateZ(1px);
+  }
+  .wing-stripe-r {
+    position: absolute;
+    width: 80px; height: 3px;
+    left: 120px; top: 65px;
+    background: linear-gradient(to right, var(--gold), transparent);
+    transform: rotate(35deg) translateZ(1px);
+  }
+
+  /* Tail fin (vertical) */
+  .tail-v {
+    position: absolute;
+    width: 0; height: 0;
+    left: 258px; top: -20px;
+    border-left: 28px solid transparent;
+    border-right: 0px solid transparent;
+    border-bottom: 45px solid rgba(170,190,225,0.95);
+    transform: translateZ(0px);
+  }
+  /* Tail fin (horizontal) */
+  .tail-hl {
+    position: absolute;
+    width: 0; height: 0;
+    left: 242px; top: -2px;
+    border-left: 12px solid transparent;
+    border-right: 40px solid rgba(160,180,215,0.9);
+    border-bottom: 25px solid transparent;
+    transform: translateZ(0px);
+  }
+  .tail-hr {
+    position: absolute;
+    width: 0; height: 0;
+    left: 242px; top: 55px;
+    border-left: 12px solid transparent;
+    border-right: 40px solid rgba(140,165,205,0.85);
+    border-top: 25px solid transparent;
+    transform: translateZ(0px);
+  }
+
+  /* Engine pods */
+  .engine-1 {
+    position: absolute;
+    width: 55px; height: 18px;
+    left: 148px; top: 5px;
+    background: linear-gradient(to bottom, #9AB0D0, #6080A8);
+    border-radius: 50%;
+    box-shadow: inset 0 2px 6px rgba(255,255,255,0.3), 0 2px 8px rgba(0,0,0,0.4);
+    transform: translateZ(-2px);
+  }
+  .engine-2 {
+    position: absolute;
+    width: 55px; height: 18px;
+    left: 148px; top: 57px;
+    background: linear-gradient(to bottom, #8090B8, #506090);
+    border-radius: 50%;
+    box-shadow: inset 0 -2px 6px rgba(0,0,0,0.3), 0 -2px 8px rgba(0,0,0,0.4);
+    transform: translateZ(-2px);
+  }
+  /* Engine glow */
+  .engine-glow-1 {
+    position: absolute;
+    width: 10px; height: 10px;
+    left: 138px; top: 9px;
+    background: radial-gradient(circle, var(--gold-light), transparent 70%);
+    border-radius: 50%;
+    animation: enginePulse 0.8s ease-in-out infinite alternate;
+    transform: translateZ(1px);
+  }
+  .engine-glow-2 {
+    position: absolute;
+    width: 10px; height: 10px;
+    left: 138px; top: 61px;
+    background: radial-gradient(circle, var(--gold-light), transparent 70%);
+    border-radius: 50%;
+    animation: enginePulse 0.8s ease-in-out 0.4s infinite alternate;
+    transform: translateZ(1px);
+  }
+  @keyframes enginePulse {
+    from { opacity: 0.5; transform: translateZ(1px) scale(0.8); }
+    to   { opacity: 1.0; transform: translateZ(1px) scale(1.3); }
+  }
+
+  /* Windows row */
+  .windows-row {
+    position: absolute;
+    display: flex;
+    gap: 10px;
+    left: 90px; top: 27px;
+    transform: translateZ(3px);
+  }
+  .win {
+    width: 9px; height: 10px;
+    background: rgba(126,200,227,0.7);
+    border-radius: 3px;
+    box-shadow: 0 0 4px rgba(126,200,227,0.5);
+  }
+  .win:nth-child(odd) { background: rgba(200,230,255,0.5); }
+
+  /* Gold livery stripe */
+  .livery {
+    position: absolute;
+    width: 200px; height: 4px;
+    left: 70px; top: 22px;
+    background: linear-gradient(to right, transparent, var(--gold), var(--gold-light), transparent);
+    transform: translateZ(4px);
+    border-radius: 2px;
+    box-shadow: 0 0 6px var(--gold);
+  }
+
+  /* ─── CONTRAILS ─── */
+  .contrails {
+    position: absolute;
+    top: 45%; left: 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .contrail {
+    position: absolute;
+    height: 2px;
+    border-radius: 1px;
+    transform-origin: right center;
+    animation: contrailFade 18s ease-in-out infinite;
+    opacity: 0;
+  }
+  .contrail-1 {
+    width: 220px;
+    background: linear-gradient(to left, rgba(255,255,255,0.5), transparent);
+    top: -12px; right: -60px;
+  }
+  .contrail-2 {
+    width: 200px;
+    background: linear-gradient(to left, rgba(255,255,255,0.4), transparent);
+    top: 12px; right: -60px;
+  }
+  @keyframes contrailFade {
+    0%  { opacity: 0; width: 10px; transform: translateX(-60vw) translateY(15vh); }
+    20% { opacity: 0.6; width: 120px; }
+    50% { opacity: 0.8; width: 240px; transform: translateX(0) translateY(-12vh); }
+    80% { opacity: 0.4; width: 180px; }
+    100%{ opacity: 0; width: 60px; transform: translateX(70vw) translateY(20vh); }
+  }
+
+  /* ─── SMALL BACKGROUND PLANES ─── */
+  .bg-plane {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1;
+  }
+  .bg-plane svg { filter: drop-shadow(0 2px 8px rgba(200,150,60,0.3)); }
+
+  .bg-plane-1 {
+    animation: bgFly1 25s linear infinite 3s;
+    top: 20%; left: -10%;
+    transform: scale(0.3);
+  }
+  .bg-plane-2 {
+    animation: bgFly2 32s linear infinite 10s;
+    top: 65%; left: -8%;
+    transform: scale(0.2);
+  }
+  .bg-plane-3 {
+    animation: bgFly3 28s linear infinite 16s;
+    top: 35%; right: -8%;
+    transform: scale(0.25) scaleX(-1);
+  }
+
+  @keyframes bgFly1 {
+    0%  { opacity:0; left:-10%; top:20%; }
+    5%  { opacity:0.4; }
+    90% { opacity:0.4; }
+    100%{ opacity:0; left:110%; top:15%; }
+  }
+  @keyframes bgFly2 {
+    0%  { opacity:0; left:-8%; top:65%; }
+    5%  { opacity:0.25; }
+    90% { opacity:0.25; }
+    100%{ opacity:0; left:110%; top:60%; }
+  }
+  @keyframes bgFly3 {
+    0%  { opacity:0; right:-8%; top:35%; }
+    5%  { opacity:0.3; }
+    90% { opacity:0.3; }
+    100%{ opacity:0; right:110%; top:30%; }
+  }
+
+  /* ─── HERO CONTENT ─── */
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 120px 24px 60px;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .hero-eyebrow::before, .hero-eyebrow::after {
+    content: '';
+    display: block;
+    width: 40px; height: 1px;
+    background: var(--gold);
+    opacity: 0.5;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 8vw, 100px);
+    font-weight: 700;
+    line-height: 1.0;
+    color: var(--cloud);
+    margin-bottom: 8px;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold-light);
+    display: block;
+  }
+  .hero-sub {
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 300;
+    color: var(--mist);
+    max-width: 540px;
+    margin: 16px auto 40px;
+    line-height: 1.7;
+  }
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(74,143,232,0.15);
+    border: 1px solid rgba(74,143,232,0.3);
+    color: var(--accent2);
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    backdrop-filter: blur(4px);
+  }
+  .ai-pulse {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100%{box-shadow:0 0 0 0 rgba(74,143,232,0.7);}
+    50%{box-shadow:0 0 0 8px rgba(74,143,232,0);}
+  }
+
+  /* ─── SEARCH BAR ─── */
+  .search-card {
+    background: rgba(13,21,40,0.85);
+    border: 1px solid rgba(200,150,60,0.2);
+    border-radius: 16px;
+    padding: 28px 32px;
+    max-width: 860px;
+    margin: 0 auto;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .search-tabs {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(200,150,60,0.1);
+    padding-bottom: 16px;
+  }
+  .s-tab {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: var(--mist);
+    cursor: pointer;
+    padding-bottom: 2px;
+    transition: color 0.2s;
+    border: none; background: none;
+  }
+  .s-tab.active {
+    color: var(--gold-light);
+    border-bottom: 2px solid var(--gold);
+  }
+  .search-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+  }
+  .s-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .s-field input, .s-field select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--cloud);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .s-field input:focus, .s-field select:focus {
+    border-color: rgba(200,150,60,0.5);
+  }
+  .s-field select option { background: var(--navy); }
+  .search-btn {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    color: var(--midnight);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(200,150,60,0.3);
+  }
+  .search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(200,150,60,0.5);
+  }
+
+  /* ─── AI SECTION ─── */
+  .ai-section {
+    position: relative;
+    z-index: 5;
+    padding: 120px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    display: block;
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(200,150,60,0.3), transparent);
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 700;
+    color: var(--cloud);
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .section-title em { color: var(--gold-light); font-style: italic; }
+  .section-desc {
+    color: var(--mist);
+    font-size: 16px;
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 60px;
+  }
+
+  /* ─── AI DEAL CARDS ─── */
+  .deals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+  }
+  .deal-card {
+    background: linear-gradient(135deg, rgba(26,44,85,0.6) 0%, rgba(13,21,40,0.8) 100%);
+    border: 1px solid rgba(200,150,60,0.15);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    position: relative;
+  }
+  .deal-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(200,150,60,0.4);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 0 30px rgba(200,150,60,0.1);
+  }
+  .deal-card-map {
+    height: 160px;
+    background: var(--deep);
+    position: relative;
+    overflow: hidden;
+  }
+  .deal-card-map svg {
+    width: 100%; height: 100%;
+  }
+  .deal-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--red);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+  .deal-badge.ai { background: rgba(74,143,232,0.9); }
+  .deal-card-body { padding: 20px; }
+  .deal-route {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .deal-city {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cloud);
+    letter-spacing: 1px;
+  }
+  .deal-arrow {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .deal-arrow-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(200,150,60,0.3), rgba(200,150,60,0.6), rgba(200,150,60,0.3));
+    position: relative;
+  }
+  .deal-arrow-plane {
+    color: var(--gold);
+    font-size: 14px;
+  }
+  .deal-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .deal-info {
+    font-size: 12px;
+    color: var(--mist);
+    line-height: 1.6;
+  }
+  .deal-info strong { color: var(--cloud); font-size: 13px; }
+  .deal-price {
+    text-align: right;
+  }
+  .deal-price-label {
+    font-size: 10px;
+    color: var(--mist);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .deal-price-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold-light);
+    line-height: 1.1;
+  }
+  .deal-price-num span {
+    font-size: 14px;
+    color: var(--mist);
+  }
+
+  /* ─── ROUTE MAP SVG (inline flight path) ─── */
+  .flight-path-line {
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    animation: drawPath 2s ease forwards;
+  }
+  @keyframes drawPath {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* ─── STATS BAND ─── */
+  .stats-band {
+    position: relative; z-index: 5;
+    border-top: 1px solid rgba(200,150,60,0.1);
+    border-bottom: 1px solid rgba(200,150,60,0.1);
+    background: rgba(13,21,40,0.5);
+    padding: 48px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    backdrop-filter: blur(8px);
+  }
+  .stat-item {
+    text-align: center;
+    padding: 0 24px;
+    border-right: 1px solid rgba(200,150,60,0.1);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--gold-light);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--mist);
+  }
+
+  /* ─── HOW IT WORKS ─── */
+  .how-section {
+    position: relative; z-index: 5;
+    padding: 120px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+    margin-top: 60px;
+    position: relative;
+  }
+  .steps-grid::before {
+    content: '';
+    position: absolute;
+    top: 32px; left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+  }
+  .step-item {
+    text-align: center;
+    padding: 0 16px;
+    position: relative;
+  }
+  .step-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--steel), var(--deep));
+    border: 1px solid rgba(200,150,60,0.3);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 26px;
+    position: relative;
+    z-index: 1;
+  }
+  .step-num {
+    position: absolute;
+    top: -8px; right: -8px;
+    width: 22px; height: 22px;
+    background: var(--gold);
+    color: var(--midnight);
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cloud);
+    margin-bottom: 10px;
+  }
+  .step-desc {
+    font-size: 13px;
+    color: var(--mist);
+    line-height: 1.6;
+  }
+
+  /* ─── PRICE ALERT / AI CLIP ─── */
+  .alert-section {
+    position: relative; z-index: 5;
+    padding: 0 48px 120px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .alert-card {
+    background: linear-gradient(135deg, rgba(26,44,85,0.7) 0%, rgba(13,21,40,0.9) 100%);
+    border: 1px solid rgba(74,143,232,0.2);
+    border-radius: 24px;
+    padding: 56px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .alert-card::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(74,143,232,0.1), transparent 70%);
+    pointer-events: none;
+  }
+  .alert-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--cloud);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .alert-title em { color: var(--accent2); font-style: italic; }
+  .alert-desc {
+    color: var(--mist);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+  .alert-input-group {
+    display: flex;
+    gap: 12px;
+  }
+  .alert-input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 14px 20px;
+    color: var(--cloud);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    outline: none;
+  }
+  .alert-input:focus { border-color: rgba(74,143,232,0.5); }
+  .alert-btn {
+    background: linear-gradient(135deg, #4A8FE8, #7EC8E3);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 24px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .alert-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(74,143,232,0.4);
+  }
+
+  /* Alert notification mockup */
+  .notif-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .notif {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: transform 0.3s;
+  }
+  .notif:hover { transform: translateX(4px); }
+  .notif-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .notif-icon.drop { background: rgba(74,232,168,0.15); }
+  .notif-icon.ai   { background: rgba(74,143,232,0.15); }
+  .notif-icon.err  { background: rgba(232,84,84,0.15); }
+  .notif-body { flex: 1; }
+  .notif-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cloud);
+    margin-bottom: 3px;
+  }
+  .notif-sub {
+    font-size: 11px;
+    color: var(--mist);
+  }
+  .notif-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    text-transform: uppercase;
+  }
+  .notif-tag.save { background: rgba(74,232,168,0.2); color: var(--green); }
+  .notif-tag.ai   { background: rgba(74,143,232,0.2); color: var(--accent2); }
+  .notif-tag.hot  { background: rgba(232,84,84,0.2); color: #FF8888; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative; z-index: 5;
+    border-top: 1px solid rgba(200,150,60,0.1);
+    padding: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(8,12,26,0.8);
+  }
+  .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    color: var(--gold-light);
+    letter-spacing: 4px;
+  }
+  .footer-links {
+    display: flex;
+    gap: 32px;
+  }
+  .footer-links a {
+    color: var(--mist);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .footer-links a:hover { color: var(--gold-light); }
+  .footer-copy {
+    font-size: 12px;
+    color: var(--mist);
+    opacity: 0.5;
+  }
+
+  /* ─── FLOATING PARTICLES (EXHAUST) ─── */
+  #particles-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* ─── GRADIENT DIVIDERS ─── */
+  .grad-div {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(200,150,60,0.3), transparent);
+    position: relative; z-index: 5;
+  }
+
+  /* ─── SCROLL REVEAL ─── */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s, transform 0.7s; }
+  .revealed { opacity: 1; transform: translateY(0); }
+
+  /* ─── MODAL (DEAL CLICK) ─── */
+  #modal-overlay {
+    position: fixed;
+    inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--navy);
+    border: 1px solid rgba(200,150,60,0.2);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 520px;
+    width: 90%;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.3s;
+  }
+  #modal-overlay.open .modal { transform: translateY(0) scale(1); }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.1);
+    border: none; border-radius: 50%;
+    color: var(--mist);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal { position: relative; }
+  .modal-route {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--cloud);
+    margin-bottom: 6px;
+  }
+  .modal-route em { color: var(--gold-light); }
+  .modal-sub { color: var(--mist); font-size: 14px; margin-bottom: 28px; }
+  .modal-price {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 4px;
+  }
+  .modal-price span { font-size: 20px; color: var(--mist); }
+  .modal-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .modal-detail {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .modal-detail-label {
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .modal-detail-val {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cloud);
+  }
+  .modal-book {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--midnight);
+    border: none;
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 8px;
+  }
+  .modal-book:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(200,150,60,0.4);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .search-grid { grid-template-columns: 1fr 1fr; }
+    .stats-band { grid-template-columns: 1fr 1fr; gap: 32px; }
+    .stat-item { border-right: none; border-bottom: 1px solid rgba(200,150,60,0.1); padding: 16px 0; }
+    .steps-grid { grid-template-columns: 1fr 1fr; }
+    .steps-grid::before { display: none; }
+    .alert-card { grid-template-columns: 1fr; gap: 40px; }
+    footer { flex-direction: column; gap: 24px; text-align: center; }
+    .ai-section, .how-section, .alert-section { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Starfield -->
+<div id="starfield"></div>
+
+<!-- Particle canvas -->
+<canvas id="particles-canvas"></canvas>
+
+<!-- ░░ NAVBAR ░░ -->
+<nav>
+  <div class="nav-logo">ÆRO<span>·</span>AI</div>
+  <ul class="nav-links">
+    <li><a href="#">Προορισμοί</a></li>
+    <li><a href="#">Ειδικές Προσφορές</a></li>
+    <li><a href="#">Alerts</a></li>
+    <li><a href="#">Για Εμάς</a></li>
+    <li><a href="#" class="nav-cta">Εγγραφή</a></li>
+  </ul>
+</nav>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero">
+
+  <!-- Background clouds SVG -->
+  <div class="cloud-layer" style="opacity:0.07; top:-10%;">
+    <svg viewBox="0 0 2000 800" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <ellipse cx="300" cy="400" rx="400" ry="150" fill="white"/>
+      <ellipse cx="900" cy="300" rx="500" ry="180" fill="white"/>
+      <ellipse cx="1600" cy="450" rx="350" ry="120" fill="white"/>
+      <ellipse cx="1200" cy="200" rx="300" ry="100" fill="white"/>
+    </svg>
+  </div>
+
+  <!-- 3D Plane Scene -->
+  <div class="plane-scene">
+
+    <!-- Background planes -->
+    <div class="bg-plane bg-plane-1">
+      <svg width="300" height="100" viewBox="0 0 300 100">
+        <g opacity="0.6">
+          <ellipse cx="160" cy="50" rx="130" ry="18" fill="#B8C8E4"/>
+          <polygon points="70,50 10,35 20,50 10,65" fill="#B8C8E4"/>
+          <polygon points="180,50 240,15 200,50 240,85" fill="#A0B4D0"/>
+          <polygon points="240,50 280,38 260,50 280,62" fill="#8AA0C4"/>
+          <rect x="138" y="42" width="5" height="7" rx="1" fill="rgba(126,200,227,0.6)"/>
+          <rect x="148" y="42" width="5" height="7" rx="1" fill="rgba(126,200,227,0.5)"/>
+          <rect x="158" y="42" width="5" height="7" rx="1" fill="rgba(126,200,227,0.4)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="bg-plane bg-plane-2">
+      <svg width="280" height="90" viewBox="0 0 280 90">
+        <g opacity="0.5">
+          <ellipse cx="150" cy="45" rx="120" ry="16" fill="#8AA0C4"/>
+          <polygon points="66,45 10,32 20,45 10,58" fill="#8AA0C4"/>
+          <polygon points="168,45 222,14 186,45 222,76" fill="#7090B0"/>
+          <polygon points="222,45 258,35 242,45 258,55" fill="#6080A0"/>
+        </g>
+      </svg>
+    </div>
+    <div class="bg-plane bg-plane-3">
+      <svg width="260" height="85" viewBox="0 0 260 85">
+        <g opacity="0.5">
+          <ellipse cx="140" cy="42" rx="110" ry="15" fill="#9AB0D0"/>
+          <polygon points="60,42 8,30 18,42 8,54" fill="#9AB0D0"/>
+          <polygon points="157,42 207,13 174,42 207,71" fill="#8090B8"/>
+          <polygon points="207,42 240,33 226,42 240,51" fill="#7080A8"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Main 3D airplane -->
+    <div class="airplane-wrapper">
+      <div class="contrails">
+        <div class="contrail contrail-1"></div>
+        <div class="contrail contrail-2"></div>
+      </div>
+      <div class="airplane">
+        <div class="fuselage"></div>
+        <div class="nose"></div>
+        <div class="cockpit"></div>
+        <div class="wing-left"></div>
+        <div class="wing-right"></div>
+        <div class="wing-stripe-l"></div>
+        <div class="wing-stripe-r"></div>
+        <div class="tail-v"></div>
+        <div class="tail-hl"></div>
+        <div class="tail-hr"></div>
+        <div class="engine-1"></div>
+        <div class="engine-2"></div>
+        <div class="engine-glow-1"></div>
+        <div class="engine-glow-2"></div>
+        <div class="windows-row">
+          <div class="win"></div><div class="win"></div><div class="win"></div>
+          <div class="win"></div><div class="win"></div><div class="win"></div>
+          <div class="win"></div><div class="win"></div><div class="win"></div>
+          <div class="win"></div><div class="win"></div><div class="win"></div>
+        </div>
+        <div class="livery"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Text -->
+  <div class="hero-content">
+    <div class="ai-badge">
+      <div class="ai-pulse"></div>
+      AI-Powered Flight Discovery
+    </div>
+    <div class="hero-eyebrow">Ανακάλυψε — Σύγκρινε — Πέτα</div>
+    <h1 class="hero-title">
+      Βρες τα
+      <em>Καλύτερα Εισιτήρια</em>
+    </h1>
+    <p class="hero-sub">
+      Η ÆRO χρησιμοποιεί τεχνητή νοημοσύνη για να εντοπίζει σε πραγματικό χρόνο τις χαμηλότερες τιμές πτήσεων από εκατοντάδες αεροπορικές εταιρείες.
+    </p>
+
+    <!-- Search Card -->
+    <div class="search-card">
+      <div class="search-tabs">
+        <button class="s-tab active">✈ Απλή Μετάβαση</button>
+        <button class="s-tab">↔ Μετ' Επιστροφής</button>
+        <button class="s-tab">⊞ Multi-City</button>
+      </div>
+      <div class="search-grid">
+        <div class="s-field">
+          <label>Αναχώρηση</label>
+          <input type="text" placeholder="Αθήνα (ATH)" value="Αθήνα (ATH)"/>
+        </div>
+        <div class="s-field">
+          <label>Προορισμός</label>
+          <input type="text" placeholder="Π.χ. Μύκονος..."/>
+        </div>
+        <div class="s-field">
+          <label>Ημερομηνία</label>
+          <input type="date"/>
+        </div>
+        <button class="search-btn" onclick="triggerSearch()">Αναζήτηση ✦</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ STATS ░░ -->
+<div class="stats-band">
+  <div class="stat-item">
+    <div class="stat-num" data-count="847">0</div>
+    <div class="stat-label">Αεροπορικές Εταιρείες</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" data-count="2.4" data-suffix="M">0</div>
+    <div class="stat-label">Πτήσεις / Ημέρα</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" data-count="340" data-prefix="€">0</div>
+    <div class="stat-label">Μέση Εξοικονόμηση</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" data-count="98" data-suffix="%">0</div>
+    <div class="stat-label">Ακρίβεια AI</div>
+  </div>
+</div>
+
+<div class="grad-div"></div>
+
+<!-- ░░ AI DEALS ░░ -->
+<section class="ai-section">
+  <div class="section-label">AI Εντοπισμός Ευκαιριών</div>
+  <h2 class="section-title">Τρέχουσες<br><em>Ειδικές Προσφορές</em></h2>
+  <p class="section-desc">Η τεχνητή νοημοσύνη μας παρακολουθεί συνεχώς τις τιμές και σε ειδοποιεί αμέσως για κάθε πτώση.</p>
+
+  <div class="deals-grid">
+
+    <!-- Card 1 -->
+    <div class="deal-card reveal" onclick="openModal('Αθήνα','Μύκονος','89','5 Ιουλ','Aegean Airlines','1ω 10λ','Α/Α/Α')">
+      <div class="deal-card-map">
+        <svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="300" height="160" fill="#0D1528"/>
+          <circle cx="70" cy="100" r="3" fill="#C8963C"/>
+          <circle cx="230" cy="60" r="3" fill="#C8963C"/>
+          <path d="M73,100 Q150,20 227,63" stroke="rgba(200,150,60,0.4)" fill="none" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="60" y="115" fill="#C8963C" font-size="9" font-family="Space Grotesk">ATH</text>
+          <text x="220" y="52" fill="#C8963C" font-size="9" font-family="Space Grotesk">JMK</text>
+          <!-- Tiny plane on path -->
+          <g transform="translate(148,38) rotate(-35)">
+            <ellipse cx="0" cy="0" rx="8" ry="3" fill="#E8EEF8"/>
+            <polygon points="-1,-5 8,-1 -1,0" fill="#D0DAEC"/>
+            <polygon points="-1,5 8,1 -1,0" fill="#D0DAEC"/>
+          </g>
+        </svg>
+        <div class="deal-badge" style="background:var(--green);color:var(--midnight);">AI DEAL</div>
+      </div>
+      <div class="deal-card-body">
+        <div class="deal-route">
+          <div class="deal-city">ATH</div>
+          <div class="deal-arrow">
+            <div class="deal-arrow-line"></div>
+            <div class="deal-arrow-plane">✈</div>
+          </div>
+          <div class="deal-city">JMK</div>
+        </div>
+        <div class="deal-meta">
+          <div class="deal-info">
+            <strong>Aegean Airlines</strong><br>
+            5 Ιουλ · 1ω 10λ<br>Α/Α/Α
+          </div>
+          <div class="deal-price">
+            <div class="deal-price-label">Από</div>
+            <div class="deal-price-num">€89<span>/άτομο</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="deal-card reveal" onclick="openModal('Αθήνα','Σαντορίνη','112','12 Ιουλ','Olympic Air','50λ','Α')">
+      <div class="deal-card-map">
+        <svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="300" height="160" fill="#0D1528"/>
+          <circle cx="70" cy="90" r="3" fill="#C8963C"/>
+          <circle cx="230" cy="75" r="3" fill="#C8963C"/>
+          <path d="M73,90 Q150,30 227,78" stroke="rgba(200,150,60,0.4)" fill="none" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="58" y="105" fill="#C8963C" font-size="9" font-family="Space Grotesk">ATH</text>
+          <text x="220" y="67" fill="#C8963C" font-size="9" font-family="Space Grotesk">JTR</text>
+          <g transform="translate(148,46) rotate(-5)">
+            <ellipse cx="0" cy="0" rx="8" ry="3" fill="#E8EEF8"/>
+            <polygon points="-1,-5 8,-1 -1,0" fill="#D0DAEC"/>
+            <polygon points="-1,5 8,1 -1,0" fill="#D0DAEC"/>
+          </g>
+        </svg>
+        <div class="deal-badge">-31%</div>
+      </div>
+      <div class="deal-card-body">
+        <div class="deal-route">
+          <div class="deal-city">ATH</div>
+          <div class="deal-arrow">
+            <div class="deal-arrow-line"></div>
+            <div class="deal-arrow-plane">✈</div>
+          </div>
+          <div class="deal-city">JTR</div>
+        </div>
+        <div class="deal-meta">
+          <div class="deal-info">
+            <strong>Olympic Air</strong><br>
+            12 Ιουλ · 50λ<br>Α
+          </div>
+          <div class="deal-price">
+            <div class="deal-price-label">Από</div>
+            <div class="deal-price-num">€112<span>/άτομο</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="deal-card reveal" onclick="openModal('Θεσσαλονίκη','Ρόδο','98','18 Αυγ','Sky Express','1ω 25λ','Α/Α')">
+      <div class="deal-card-map">
+        <svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="300" height="160" fill="#0D1528"/>
+          <circle cx="60" cy="60" r="3" fill="#C8963C"/>
+          <circle cx="240" cy="110" r="3" fill="#C8963C"/>
+          <path d="M63,63 Q150,50 237,107" stroke="rgba(200,150,60,0.4)" fill="none" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="48" y="50" fill="#C8963C" font-size="9" font-family="Space Grotesk">SKG</text>
+          <text x="230" y="127" fill="#C8963C" font-size="9" font-family="Space Grotesk">RHO</text>
+          <g transform="translate(148,72) rotate(25)">
+            <ellipse cx="0" cy="0" rx="8" ry="3" fill="#E8EEF8"/>
+            <polygon points="-1,-5 8,-1 -1,0" fill="#D0DAEC"/>
+            <polygon points="-1,5 8,1 -1,0" fill="#D0DAEC"/>
+          </g>
+        </svg>
+        <div class="deal-badge ai">AI PICK</div>
+      </div>
+      <div class="deal-card-body">
+        <div class="deal-route">
+          <div class="deal-city">SKG</div>
+          <div class="deal-arrow">
+            <div class="deal-arrow-line"></div>
+            <div class="deal-arrow-plane">✈</div>
+          </div>
+          <div class="deal-city">RHO</div>
+        </div>
+        <div class="deal-meta">
+          <div class="deal-info">
+            <strong>Sky Express</strong><br>
+            18 Αυγ · 1ω 25λ<br>Α/Α
+          </div>
+          <div class="deal-price">
+            <div class="deal-price-label">Από</div>
+            <div class="deal-price-num">€98<span>/άτομο</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="grad-div"></div>
+
+<!-- ░░ HOW IT WORKS ░░ -->
+<section class="how-section">
+  <div class="section-label">Πώς Λειτουργεί</div>
+  <h2 class="section-title">Τεχνητή Νοημοσύνη<br><em>στην Υπηρεσία σου</em></h2>
+
+  <div class="steps-grid">
+    <div class="step-item reveal">
+      <div class="step-icon">🔍<div class="step-num">1</div></div>
+      <div class="step-title">Ορίζεις Προορισμό</div>
+      <div class="step-desc">Πληκτρολόγησε τον προορισμό σου και η ΑΙ ξεκινά αμέσως σάρωση σε εκατοντάδες πηγές.</div>
+    </div>
+    <div class="step-item reveal">
+      <div class="step-icon">🤖<div class="step-num">2</div></div>
+      <div class="step-title">AI Ανάλυση Τιμών</div>
+      <div class="step-desc">Ο αλγόριθμος μας αναλύει ιστορικά δεδομένα και εντοπίζει πότε η τιμή είναι πραγματικά καλή.</div>
+    </div>
+    <div class="step-item reveal">
+      <div class="step-icon">🔔<div class="step-num">3</div></div>
+      <div class="step-title">Λαμβάνεις Alert</div>
+      <div class="step-desc">Ειδοποίηση άμεσα στο κινητό σου μόλις η τιμή κατεβεί κάτω από το threshold που έχεις θέσει.</div>
+    </div>
+    <div class="step-item reveal">
+      <div class="step-icon">🎫<div class="step-num">4</div></div>
+      <div class="step-title">Κλείνεις & Πετάς</div>
+      <div class="step-desc">Ένα κλικ για να μεταβείς στη σελίδα κράτησης. Χωρίς κρυφές χρεώσεις, χωρίς περιττά βήματα.</div>
+    </div>
+  </div>
+</section>
+
+<div class="grad-div"></div>
+
+<!-- ░░ ALERT SECTION ░░ -->
+<section class="alert-section">
+  <div class="alert-card reveal">
+    <div>
+      <div class="section-label">Price Clipping</div>
+      <h2 class="alert-title">Μην Χάσεις<br>Καμία <em>Ευκαιρία</em></h2>
+      <p class="alert-desc">Ρύθμισε ειδοποιήσεις για τους αγαπημένους σου προορισμούς. Η ÆRO AI παρακολουθεί 24/7 και σε ενημερώνει αμέσως για κάθε πτώση τιμής.</p>
+      <div class="alert-input-group">
+        <input type="email" placeholder="email@example.com" class="alert-input"/>
+        <button class="alert-btn">Ενεργοποίηση Alerts →</button>
+      </div>
+    </div>
+    <div class="notif-stack">
+      <div class="notif">
+        <div class="notif-icon drop">📉</div>
+        <div class="notif-body">
+          <div class="notif-title">ATH → MYK – Πτώση τιμής!</div>
+          <div class="notif-sub">€147 → €89 · Aegean · 5 Ιουλ</div>
+        </div>
+        <div class="notif-tag save">−40%</div>
+      </div>
+      <div class="notif">
+        <div class="notif-icon ai">🤖</div>
+        <div class="notif-body">
+          <div class="notif-title">AI Πρόβλεψη: Καλή τιμή</div>
+          <div class="notif-sub">ATH → JTR · Εξαιρετική ευκαιρία</div>
+        </div>
+        <div class="notif-tag ai">AI</div>
+      </div>
+      <div class="notif">
+        <div class="notif-icon err">🔥</div>
+        <div class="notif-body">
+          <div class="notif-title">Flash Deal – Περιορισμένα Θέσεις</div>
+          <div class="notif-sub">SKG → RHO · Λήγει σε 2 ώρες</div>
+        </div>
+        <div class="notif-tag hot">HOT</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FOOTER ░░ -->
+<footer>
+  <div class="footer-logo">ÆRO · AI</div>
+  <div class="footer-links">
+    <a href="#">Πολιτική Απορρήτου</a>
+    <a href="#">Όροι Χρήσης</a>
+    <a href="#">Επικοινωνία</a>
+    <a href="#">API</a>
+  </div>
+  <div class="footer-copy">© 2026 ÆRO AI · All rights reserved</div>
+</footer>
+
+<!-- ░░ MODAL ░░ -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">✕</button>
+    <div class="modal-route" id="modal-route">Αθήνα → <em>Μύκονος</em></div>
+    <div class="modal-sub" id="modal-sub">Aegean Airlines · 5 Ιουλ 2026</div>
+    <div class="modal-price" id="modal-price">€89<span>/άτομο</span></div>
+    <div class="modal-details">
+      <div class="modal-detail"><div class="modal-detail-label">Αεροπορική</div><div class="modal-detail-val" id="md-airline">Aegean Airlines</div></div>
+      <div class="modal-detail"><div class="modal-detail-label">Διάρκεια</div><div class="modal-detail-val" id="md-dur">1ω 10λ</div></div>
+      <div class="modal-detail"><div class="modal-detail-label">Αποσκευές</div><div class="modal-detail-val" id="md-bags">Α/Α/Α</div></div>
+      <div class="modal-detail"><div class="modal-detail-label">AI Score</div><div class="modal-detail-val" style="color:var(--gold-light)">★ 9.4 / 10</div></div>
+    </div>
+    <button class="modal-book">Κράτηση τώρα →</button>
+  </div>
+</div>
+
+<script>
+// ─── STARFIELD ───
+(function(){
+  const sf = document.getElementById('starfield');
+  for(let i=0;i<180;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    const size = Math.random()*2.5+0.5;
+    s.style.cssText=`
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      --d:${(Math.random()*4+2).toFixed(1)}s;
+      --o:${(Math.random()*0.7+0.1).toFixed(2)};
+      animation-delay:${(Math.random()*5).toFixed(1)}s;
+    `;
+    sf.appendChild(s);
+  }
+})();
+
+// ─── PARTICLE EXHAUST ───
+(function(){
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+  resize();
+  window.addEventListener('resize',resize);
+
+  const particles = [];
+  function addParticle(){
+    if(Math.random()>0.3) return;
+    const x = Math.random()*W;
+    const y = Math.random()*H*0.7;
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5)*0.4,
+      vy: -Math.random()*0.5-0.2,
+      life: 1,
+      size: Math.random()*2+0.5,
+      gold: Math.random()<0.3
+    });
+  }
+
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    addParticle();
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.x+=p.vx; p.y+=p.vy; p.life-=0.006;
+      if(p.life<=0){ particles.splice(i,1); continue; }
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      if(p.gold){
+        ctx.fillStyle=`rgba(200,150,60,${p.life*0.4})`;
+      } else {
+        ctx.fillStyle=`rgba(184,200,228,${p.life*0.25})`;
+      }
+      ctx.fill();
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// ─── SEARCH TABS ───
+document.querySelectorAll('.s-tab').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.s-tab').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ─── SEARCH TRIGGER ───
+function triggerSearch(){
+  const btn = document.querySelector('.search-btn');
+  btn.textContent = '⏳ Αναζήτηση...';
+  btn.style.background='linear-gradient(135deg,#4A8FE8,#7EC8E3)';
+  setTimeout(()=>{
+    btn.textContent = '✓ Βρέθηκαν Αποτελέσματα!';
+    btn.style.background='linear-gradient(135deg,#4AE8A8,#7EC8E3)';
+    setTimeout(()=>{
+      btn.textContent='Αναζήτηση ✦';
+      btn.style.background='linear-gradient(135deg,#C8963C,#E8B86D)';
+    },2000);
+    // Animate cards
+    document.querySelectorAll('.deal-card').forEach((c,i)=>{
+      c.style.transition='transform 0.3s, box-shadow 0.3s, border-color 0.3s';
+      setTimeout(()=>{
+        c.style.borderColor='rgba(74,232,168,0.5)';
+        c.style.boxShadow='0 0 30px rgba(74,232,168,0.2)';
+        setTimeout(()=>{
+          c.style.borderColor='';
+          c.style.boxShadow='';
+        },1200);
+      },i*200);
+    });
+  },1400);
+}
+
+// ─── STAT COUNTER ───
+function animateCount(el){
+  const target=parseFloat(el.dataset.count);
+  const suf=el.dataset.suffix||'';
+  const pre=el.dataset.prefix||'';
+  const dur=1800;
+  const step=16;
+  const steps=dur/step;
+  let current=0;
+  const inc=target/steps;
+  const t=setInterval(()=>{
+    current=Math.min(current+inc,target);
+    const disp=Number.isInteger(target)?Math.round(current):current.toFixed(1);
+    el.textContent=pre+disp+suf;
+    if(current>=target){ clearInterval(t); el.textContent=pre+target+suf; }
+  },step);
+}
+
+// ─── SCROLL REVEAL & COUNTER ───
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('revealed');
+      const counter=e.target.querySelector('[data-count]');
+      if(counter) animateCount(counter);
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:0.15});
+
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+document.querySelectorAll('[data-count]').forEach(el=>{
+  const parentObs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ animateCount(e.target); parentObs.unobserve(e.target); }
+    });
+  },{threshold:0.5});
+  parentObs.observe(el);
+});
+
+// ─── MODAL ───
+function openModal(from,to,price,date,airline,dur,bags){
+  document.getElementById('modal-route').innerHTML=from+' → <em>'+to+'</em>';
+  document.getElementById('modal-sub').textContent=airline+' · '+date+' 2026';
+  document.getElementById('modal-price').innerHTML='€'+price+'<span>/άτομο</span>';
+  document.getElementById('md-airline').textContent=airline;
+  document.getElementById('md-dur').textContent=dur;
+  document.getElementById('md-bags').textContent=bags;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e){
+  if(e.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('modal-overlay').classList.remove('open'); });
+
+// ─── NOTIF LIVE PULSE ───
+setInterval(()=>{
+  const notifs=document.querySelectorAll('.notif');
+  const idx=Math.floor(Math.random()*notifs.length);
+  notifs[idx].style.borderColor='rgba(200,150,60,0.4)';
+  notifs[idx].style.background='rgba(200,150,60,0.06)';
+  setTimeout(()=>{
+    notifs[idx].style.borderColor='';
+    notifs[idx].style.background='';
+  },800);
+},3000);
+
+// ─── MOBILE NAV HINT ───
+if(window.innerWidth<768){
+  const burger=document.createElement('button');
+  burger.innerHTML='☰';
+  burger.style.cssText='background:none;border:none;color:#E8B86D;font-size:24px;cursor:pointer;';
+  document.querySelector('nav').appendChild(burger);
+}
+</script>
+</body>
+</html>
